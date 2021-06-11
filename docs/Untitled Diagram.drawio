@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2021-06-11T10:32:45.415Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.101 Safari/537.36" etag="AuBZfO4seija1hvQI52L" version="14.7.7" type="github">
+<mxfile host="app.diagrams.net" modified="2021-06-11T10:33:33.402Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.101 Safari/537.36" etag="Fhw9Y0OElgA0xXfJpoGB" version="14.7.7" type="github">
   <diagram id="HTqoZl6nQ_mTzUx8D8Yq" name="Page-1">
     <mxGraphModel dx="1422" dy="737" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
@@ -194,9 +194,6 @@
         </mxCell>
         <mxCell id="B9jsR6x07uflWmSMTbUq-54" value="Klucz publiczny" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="455" y="680" width="130" height="20" as="geometry" />
-        </mxCell>
-        <mxCell id="BWkzNr41fS58RqpZKIa5-1" value="" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="470" y="430" width="120" height="80" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
