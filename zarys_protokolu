@@ -9,5 +9,6 @@
 9.  serwer -> klient SUMA 
 10. klient -> serwer 240 OK | 404 BAD
 11. serwer -> klient wszystkie pliki
-12. klient -> serwer ADD/USUN/EDYTUJ/SPRA 
-13. serwer -> all_klienci SYNCHRONIZUJ
+12. klient -> serwer 240 OK (odebranie poprawnie wszystkich plikow) | 404 BLAD
+13. klient -> serwer ADD/USUN/EDYTUJ/SPRA 
+14. serwer -> all_klienci SYNCHRONIZUJ
