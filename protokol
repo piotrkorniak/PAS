@@ -1,0 +1,12 @@
+1.  klient -> serwer HI
+2.  serwer -> klient 240 HELLO
+3.  serwer -> klient SEND ME LOGIN
+4.  klient -> serwer login
+5.  serwer -> klient 240 OK | 404 BAD
+6.  serwer -> klient 240 OK SEND ME PASSWORD
+7.  klient -> serwer password
+8.  serwer -> klient 240 OK | 404 BAD 
+9.  serwer -> klient SUMA 
+11. klient -> serwer 240 OK | 404 BAD
+12. serwer -> klient wszystkie pliki
+13. klient -> serwer ADD/USUN/EDYTUJ/SPRA 
