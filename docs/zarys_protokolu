@@ -12,3 +12,5 @@
 12. serwer -> klient 207 OK (odebranie poprawnie wszystkich plikow) | 507 BLAD
 13. serwer -> all_klienci 104 YOU NEED UPDATE\r\n\r\n
 14. serwer -> all_klienci wyslanie wszystkich plikow
+15. all_klienci -> 203 OK (odebranie poprawnie wszystkich plikow) | 503 BLAD
+16. w przypadku bledu wysyłanie ponowne do tych klientów
