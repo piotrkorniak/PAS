@@ -39,6 +39,32 @@ def givePort():
     return port_download
     
 
+
+def sendZip(client,path):
+    s2 = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    s2.bind(("localhost",newPort))
+    s2.listen(1)   
+    newPort = givePort()               
+    size = Path(path).stat().st_size
+    client.transport.write(("240 LOGGED_IN "+ str(newPort) + " " + size +"\r\n\r\n").encode())
+    
+    client_download,addres_download = s2.accept()
+    print("Download connected: " + addres_download[0])
+    
+    file = open(path,'rb')
+    byte = file.read(1)
+    fb = b''
+    while byte:
+        client_download.sendall(byte)
+        byte = file.read(1)
+
+    print("File sent\n")    
+    file.close()
+    print("File closed \n")
+    s2.close()
+    print("Connection dowload closed \n")
+
+
 def makeZip():
      name = datetime.datetime.now().strftime("[%d.%m.%Y-%H;%M;%S]") + "synchronizacja"
      path = shutil.make_archive(name, 'zip',  r"d:\Synchronizacja")
@@ -106,17 +132,11 @@ class SynchronizerServerClientProtocol(asyncio.Protocol):
                 if(checkPassword(account,password)):
                     print("LOGGED IN")
                     #cały folder do zipa
-                    newPort = givePort()
-                    s2 = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-                    s2.bind(("localhost",newPort))
-                    s2.listen(1)                  
-                    path = makeZip()
-                    size = Path(path).stat().st_size
-                    self.transport.write(("240 LOGGED_IN "+ str(newPort) + " " + size +"\r\n\r\n").encode())
-
                     #przełączenie na nowy socket i wysłanie nowego portu
                     #długość zipa
                     #zipa w bajtach
+                    path = makeZip()
+                    sendZip(self,path)
                 else:
                     print("BAD PASSWORD")
                     self.transport.write("404 BAD PASSWORD\r\n\r\n".encode())
