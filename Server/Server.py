@@ -41,12 +41,13 @@ def givePort():
 
 
 def sendZip(client,path):
+    newPort = givePort()
     s2 = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     s2.bind(("localhost",newPort))
     s2.listen(1)   
-    newPort = givePort()               
+                   
     size = Path(path).stat().st_size
-    client.transport.write(("240 LOGGED_IN "+ str(newPort) + " " + size +"\r\n\r\n").encode())
+    client.transport.write(("240 LOGGED_IN "+ str(newPort) + " " + str(size) +"\r\n\r\n").encode())
     
     client_download,addres_download = s2.accept()
     print("Download connected: " + addres_download[0])
@@ -65,10 +66,10 @@ def sendZip(client,path):
     print("Connection dowload closed \n")
 
 
-def makeZip():
+def makeZip(login):
      name = datetime.datetime.now().strftime("[%d.%m.%Y-%H;%M;%S]") + "synchronizacja"
-     path = shutil.make_archive(name, 'zip',  r"d:\Synchronizacja")
-     print("zip made")
+     path = shutil.make_archive(name, 'zip',  (r"d:\\Synchronizacja\\"+login))
+     print("zip made for login: " + login)
      return str(path)
     
 
@@ -131,11 +132,11 @@ class SynchronizerServerClientProtocol(asyncio.Protocol):
                 password = msg.split(' ')[2]
                 if(checkPassword(account,password)):
                     print("LOGGED IN")
-                    #cały folder do zipa
-                    #przełączenie na nowy socket i wysłanie nowego portu
-                    #długość zipa
+                    #caly folder do zipa
+                    #przelaczenie na nowy socket i wyslanie nowego portu
+                    #dlugosc zipa
                     #zipa w bajtach
-                    path = makeZip()
+                    path = makeZip("test")
                     sendZip(self,path)
                 else:
                     print("BAD PASSWORD")
@@ -171,12 +172,13 @@ class SynchronizerServerClientProtocol(asyncio.Protocol):
 
             #po update 
             for client in clients:
-                client.transport.write("104 YOU NEED UPDATE dłuość zipa / nowy port\r\n\r\n".encode())
+                client.transport.write("104 YOU NEED UPDATE dlugosc zipa / nowy port\r\n\r\n".encode())
                 #wyslanie do wszystkich otrzymanego zipa 
 
 
     async def async_sendZip(self):
-        resp = await loop.run_in_executor(thread_pool,make_send_deleteZip,self.transport)
+        path = makeZip("test")
+        resp = await loop.run_in_executor(thread_pool,sendZip,self,path)
 
 seed(1)        
 clients = []
@@ -191,66 +193,3 @@ except:
 
 server.close()
 ############################################################################################################################
-
-import socket
-import os
-from random import seed
-from random import randint
-
-seed(1)
-
-s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-s.bind(("localhost",1337))
-s.listen(5)
-
-files_list = os.listdir("D:FTP")
-
-while True:
-    client,addres = s.accept()
-    print ("Connected: " + addres[0])
-
-    data = b''
-
-    while b'\r\n\r\n' not in data:
-        data += client.recv(1)
-
-    file = str(data.decode('utf-8'))
-    file_name = file[:len(file)-4].lower()
-    print ("Looking for: " + file_name + " in: " + "D:FTP" )
-
-    if file_name in files_list:
-        print("File exists")
-        client.sendall(("File exists" + '\r\n\r\n').encode('utf-8'))
-
-        port_download = randint(10000,65535)
-        print ("Download Port: "+ str(port_download))
-        client.sendall((str(port_download) +'\r\n\r\n').encode('utf-8'))
-        
-        s2 = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        s2.bind(("localhost",port_download))
-        s2.listen(1)
-        client_download,addres_download = s2.accept()
-        print("Download connected: " + addres_download[0])
-
-        f = open(('D:FTP\\' + file_name),'rb')
-        byte = f.read(1)
-        while byte:
-            client_download.sendall(byte)
-            byte = f.read(1)
-
-        client_download.sendall(('\r\n\r\n').encode('utf-8'))
-        print("File sent")
-        
-        f.close()
-        client_download.close()
-        s2.close()
-
-        print("Connection closed \n\n\n")
-
-    else:
-        client.sendall(("File does not exist" + '\r\n\r\n').encode('utf-8'))
-        print("File does not exist")
-        print("Connection closed \n\n\n")
-    
-    client.close()
-s.close()
