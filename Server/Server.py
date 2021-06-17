@@ -73,30 +73,30 @@ def makeZip(login):
      return str(path)
     
 
-def make_send_deleteZip(client):
-    
-    path = makeZip()
-
-    print(path)
-
-    file = open(path,'rb')
-    byte = file.read(1024)
-    fb = b''
-    x = 1024
-    while byte:
-        fb += byte
-        client.write(byte)
-        print("reading ")
-        print(x)
-        x += 1024
-        byte = file.read(1024)
-
-      
-    client.write(('\r\n\r\n').encode('utf-8'))
-    print("File sent\n")    
-    file.close()
-    print("File closed \n")
-    delete_file(path)
+#def make_send_deleteZip(client):
+#    
+#    path = makeZip()
+#
+#    print(path)
+#
+#    file = open(path,'rb')
+#    byte = file.read(1024)
+#    fb = b''
+#    x = 1024
+#    while byte:
+#        fb += byte
+#        client.write(byte)
+#        print("reading ")
+#        print(x)
+#        x += 1024
+#        byte = file.read(1024)
+#
+#      
+#    client.write(('\r\n\r\n').encode('utf-8'))
+#    print("File sent\n")    
+#    file.close()
+#    print("File closed \n")
+#    delete_file(path)
     
 def delete_file(path):
     os.remove(path)
@@ -132,6 +132,7 @@ class SynchronizerServerClientProtocol(asyncio.Protocol):
                 password = msg.split(' ')[2]
                 if(checkPassword(account,password)):
                     print("LOGGED IN")
+                    self.name = account.login
                     #caly folder do zipa
                     #przelaczenie na nowy socket i wyslanie nowego portu
                     #dlugosc zipa
@@ -147,6 +148,9 @@ class SynchronizerServerClientProtocol(asyncio.Protocol):
         
         if(msg == "SEND"): #sprawdzajaca tymczasowa
             print("I recive: {}".format(msg))
+            self.name = "LOGIN" + str(self.addr)
+            for a in clients:
+                print(a.name)
             task = asyncio.create_task(self.async_sendZip())
         
         if(msg.split(' ')[0] == "202"):
@@ -172,7 +176,9 @@ class SynchronizerServerClientProtocol(asyncio.Protocol):
 
             #po update 
             for client in clients:
-                client.transport.write("104 YOU NEED UPDATE dlugosc zipa / nowy port\r\n\r\n".encode())
+                if(client.name == self.name):
+                    client.transport.write("104 YOU NEED UPDATE dlugosc zipa / nowy port\r\n\r\n".encode())
+                    task = asyncio.create_task(self.async_sendZip())
                 #wyslanie do wszystkich otrzymanego zipa 
 
 
@@ -193,4 +199,3 @@ except:
 
 server.close()
 ############################################################################################################################
-#
