@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -15,48 +14,62 @@ namespace Client
     class Program
     {
         private static readonly IPAddress ServerIp = IPAddress.Loopback;
-        private const int ServerPort = 1000;
+        private const int ServerPort = 1337;
         private static readonly byte[] EndCode = Encoding.UTF8.GetBytes("\r\n\r\n").ToArray();
 
         private static readonly Socket Server = new Socket(AddressFamily.InterNetwork, SocketType.Stream,
             ProtocolType.Tcp);
 
         private static string _userName;
+        private static string _sessionId;
 
         static void Main(string[] args)
         {
             Server.Connect(IPAddress.Loopback, ServerPort);
-            //TODO: wymiana klucza publciznego
+            SendMessage("HI\r\n", Server);                                                                              //HI\r\n\r\n
+            string message = ReceiveDataInString(Server, EndCode);
+            int messageCode = GetMessageCode(message);                                                                  //101 HI\r\n\r\n
+            Console.WriteLine(message);
+            if (messageCode != 101)
+                return;
             while (true)
             {
                 Console.WriteLine("Podaj login");
                 _userName = Console.ReadLine();
                 Console.WriteLine("Podaj hasło");
                 var password = Console.ReadLine();
-                
+
                 if (string.IsNullOrEmpty(_userName) || string.IsNullOrEmpty(password))
                 {
                     continue;
                 }
 
-                SendMessage($"\"{_userName}\" \"{password}\"", Server, EndCode);
+                SendMessage($"LOGIN\r\n{_userName}\r\n{password}\r\n\r\n",
+                    Server);                                                                                            //LOGIN\r\nUSERNAME\r\nPASSWORD\r\n\r\n
 
-                var message = ReceiveDataInString(Server, EndCode);
-
-                if (message == "404 BAD PASSWORD")
+                message = ReceiveDataInString(Server, EndCode);
+                messageCode = GetMessageCode(message);
+                if (messageCode == 404)                                                                                 //404 BAD PASSWORD\r\n\r\n
                 {
                     continue;
                 }
 
-                if (message == "240 LOGGED IN")
+                if (messageCode == 240)                                                                                 //240 LOGGED IN SESIONID = __SESIONID__\r\n\r\n
                 {
+                    _sessionId = message.Split().Last();
                     break;
                 }
             }
 
-            //TODO: do uzgodnienia przesyłanie plików
-            int port = int.Parse(ReceiveDataInString(Server, EndCode));
-            int directoryInZipLength = int.Parse(ReceiveDataInString(Server, EndCode));
+            message = ReceiveDataInString(Server, EndCode);                                                             //241 __PORT__ __ROZMIAR_PLIKU__
+            messageCode = GetMessageCode(message);
+            if (messageCode != 241)
+            {
+                return;
+            }
+
+            int port = int.Parse(message.Split().ElementAt(1));
+            int directoryInZipLength = int.Parse(message.Split().ElementAt(2));
             var directoryInZip = DownloadFile(directoryInZipLength, ServerIp, port);
 
             File.WriteAllBytes($"{_userName}.zip", directoryInZip.ToArray());
@@ -71,20 +84,23 @@ namespace Client
         {
             while (true)
             {
-                var request = ReceiveDataInString(socket, EndCode);
-                var requestCode = int.Parse(request.Split().First());
-                if (requestCode == 103)
+                var message = ReceiveDataInString(socket, EndCode);
+                Console.WriteLine(message);
+                var messageCode = int.Parse(message.Split().First());
+                if (messageCode == 267)                                                                                 //267 CHANGE __PORT__ __ROZMIAR__
                 {
-
-                }
-
-                if (requestCode == 150)// 155 długośZipa
-                {
-                    //prześlę długoś zipa
-                    //prześlę zipa
-                    199 jhjklawherkjlahwjkrh20913741jkds
+                    int port = int.Parse(message.Split().ElementAt(1));
+                    int directoryInZipLength = int.Parse(message.Split().ElementAt(2));
+                    var directoryInZip = DownloadFile(directoryInZipLength, ServerIp, port);
+                    File.WriteAllBytes($"{_userName}.zip", directoryInZip.ToArray());
+                    ZipFile.ExtractToDirectory($"{_userName}.zip", _userName);
                 }
             }
+        }
+
+        static int GetMessageCode(string message)
+        {
+            return int.Parse(message.Split().First());
         }
 
         private static void WaitForFileChanged(Socket socket, string directoryPath)
@@ -92,31 +108,30 @@ namespace Client
             using var watcher = new FileWatcher(directoryPath, TimeSpan.FromSeconds(5));
             watcher.StartWatching();
             watcher.FilesModified += OnFilesModified;
-            //wysyłam na serwer 105 że coś się zmieniło
         }
 
         private static List<byte> DownloadFile(int fileSize, IPAddress ip, int port)
         {
             var downloadSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
             downloadSocket.Connect(ip, port);
+            SendMessage("READY\r\n\r\n", downloadSocket);                                                               //READY\r\n\r\n            
 
             List<byte> result = new List<byte>();
             byte[] buffer = new Byte[1];
 
             for (int i = 0; i < fileSize; i++)
             {
-                downloadSocket.Receive(buffer, 1, SocketFlags.None);
+                downloadSocket.Receive(buffer, 1, SocketFlags.None);                                                 //Przesyłanie zipa na nowym porcie
                 result.Add(buffer[0]);
             }
 
+            SendMessage("SUCCESS\r\n\r\n", downloadSocket);                                                             //SUCCESS\r\n\r\n
             return result;
         }
 
-        static void SendMessage(string message, Socket socket, byte[] endCode)
+        static void SendMessage(string message, Socket socket)
         {
             socket.Send(Encoding.UTF8.GetBytes(message));
-            socket.Send(endCode);
         }
 
         static string ReceiveDataInString(Socket socket, byte[] endCode)
@@ -153,7 +168,36 @@ namespace Client
                 Console.WriteLine(
                     $"{DateTime.Now} {modifiedFile.FilePath}: {modifiedFile.ModificationType.ToString()}");
             }
-            SendMessage("Rozpocznij synchronizacje", Server, EndCode);
+
+            SendMessage("CHANGE __SESIONID__ __PORT__  __ROZMIAR__", Server);
+
+            ZipFile.CreateFromDirectory(_userName, $"{_userName}.zip");
+            var zipInBytes = new FileInfo($"{_userName}.zip").Length;
+            int randPort = new Random().Next(10000, 65535);
+
+            var sendFileSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            var sendFileEndPoint = new IPEndPoint(ServerIp, randPort);
+
+            sendFileSocket.Bind(sendFileEndPoint);
+            sendFileSocket.Listen(1);
+
+            SendMessage($"CHANGE {_sessionId} {randPort}  {zipInBytes}\r\n\r\n",
+                Server);                                                                                                //CHANGE __SESIONID__ __PORT__  __ROZMIAR__
+
+            var sendFileClient = sendFileSocket.Accept();
+            var message = ReceiveDataInString(sendFileClient, EndCode);
+            if (message != "READY")                                                                                     //READY\r\n\r\n
+            {
+                return;
+            }
+
+            sendFileClient.SendFile($"{_userName}.zip");                                                                //Przesyłanie zipa na nowym porcie
+
+            if (message == "SUCCESS")                                                                                   //SUCCESS\r\n\r\n
+            {
+            }
+
+            sendFileClient.Close();
         }
     }
 }
