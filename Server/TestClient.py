@@ -28,6 +28,7 @@ try:
     file_name = datetime.datetime.now().strftime("[%d.%m.%Y-%H;%M;%S]") + "synch.zip"
     s.connect(('localhost', 1337))
     s.sendall("SEND".encode())
+    s.sendall("cosososos\r\n\r\n".encode())
     f = open(file_name, 'wb')
     file_b = b''    
     x=0

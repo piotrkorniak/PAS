@@ -75,6 +75,14 @@ namespace Client
                 var requestCode = int.Parse(request.Split().First());
                 if (requestCode == 103)
                 {
+
+                }
+
+                if (requestCode == 150)// 155 długośZipa
+                {
+                    //prześlę długoś zipa
+                    //prześlę zipa
+                    199 jhjklawherkjlahwjkrh20913741jkds
                 }
             }
         }
@@ -84,6 +92,7 @@ namespace Client
             using var watcher = new FileWatcher(directoryPath, TimeSpan.FromSeconds(5));
             watcher.StartWatching();
             watcher.FilesModified += OnFilesModified;
+            //wysyłam na serwer 105 że coś się zmieniło
         }
 
         private static List<byte> DownloadFile(int fileSize, IPAddress ip, int port)
