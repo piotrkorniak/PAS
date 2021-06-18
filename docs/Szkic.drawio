@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2021-06-18T17:15:39.709Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.106 Safari/537.36" etag="qLK6688Ido0KdLm8hqvA" version="14.7.7" type="github">
+<mxfile host="app.diagrams.net" modified="2021-06-18T17:19:59.048Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.106 Safari/537.36" etag="hCtEgQYFudsccfvfEnLK" version="14.7.7" type="github">
   <diagram id="HTqoZl6nQ_mTzUx8D8Yq" name="Page-1">
     <mxGraphModel dx="1422" dy="737" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
@@ -79,7 +79,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="GfalZHz15B0-v1izT8Yl-26" value="240 LOGGED IN SESIONID&amp;nbsp; __SESIONID__&amp;nbsp;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+        <mxCell id="GfalZHz15B0-v1izT8Yl-26" value="240 LOGGED_IN SESIONID&amp;nbsp; __SESIONID__&amp;nbsp;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="155" y="530" width="320" height="20" as="geometry" />
         </mxCell>
         <mxCell id="GfalZHz15B0-v1izT8Yl-29" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="GfalZHz15B0-v1izT8Yl-27" target="GfalZHz15B0-v1izT8Yl-19" edge="1">
@@ -104,7 +104,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="GfalZHz15B0-v1izT8Yl-34" value="241 __PORT__ __ROZMIAR_PLIKU__" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;shadow=0;glass=0;sketch=0;" parent="1" vertex="1">
+        <mxCell id="GfalZHz15B0-v1izT8Yl-34" value="KOD UPDATE __PORT__ __ROZMIAR_PLIKU__" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;shadow=0;glass=0;sketch=0;" parent="1" vertex="1">
           <mxGeometry x="200" y="610" width="240" height="20" as="geometry" />
         </mxCell>
         <mxCell id="GfalZHz15B0-v1izT8Yl-36" value="" style="endArrow=classic;html=1;" parent="1" edge="1">
