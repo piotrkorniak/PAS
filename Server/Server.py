@@ -34,10 +34,47 @@ def checkPassword(account, password):
         return True
     return False
 
+
+
 def givePort():
     port_download = randint(10000,65535)    
     return port_download
     
+
+
+def recvZip(client,port):
+    newPort = givePort()
+    s2 = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    s2.bind(("localhost",newPort))
+    s2.listen(1)   
+
+    client_download,addres_download = s2.accept()
+    print("Download connected: " + addres_download[0])
+
+    s2.send("OK GO\r\n\r\n".encode())
+    
+    b = b''
+    while "\r\n\r\n" not in msg:
+        b += s2.recv()
+    msg = b.decode()
+    full_size = msg.split(" ")[0]
+    
+
+    temp_name = datetime.datetime.now().strftime("[%d.%m.%Y-%H;%M;%S]") + "synchronizacja" + str(client.name)    
+    main_dir =  os.path.join("D:","Synchronizacja","")
+    temp_zip = os.path.join(main_dir,temp_name)
+    path_to_unzip = os.path.join("D:","Synchronizacja", client.name)
+    
+    f = open(temp_zip, 'wb')
+    size = 0
+    while full_size < size:
+        f.write(s2.recv(1))
+        size +=1
+    f.close()
+
+    shutil.rmtree(path_to_unzip)
+    shutil.unpack_archive(temp_zip,path_to_unzip)
+    os.remove(temp_zip)
 
 
 def sendZip(client,path):
@@ -47,7 +84,7 @@ def sendZip(client,path):
     s2.listen(1)   
                    
     size = Path(path).stat().st_size
-    client.transport.write(("240 LOGGED_IN "+ str(newPort) + " " + str(size) +"\r\n\r\n").encode())
+    client.transport.write(("UPDATE "+ str(newPort) + " " + str(size) +"\r\n\r\n").encode())
     
     client_download,addres_download = s2.accept()
     print("Download connected: " + addres_download[0])
@@ -67,36 +104,12 @@ def sendZip(client,path):
 
 
 def makeZip(login):
-     name = datetime.datetime.now().strftime("[%d.%m.%Y-%H;%M;%S]") + "synchronizacja"
-     path = shutil.make_archive(name, 'zip',  (r"d:\\Synchronizacja\\"+login))
+     name = datetime.datetime.now().strftime("[%d.%m.%Y-%H;%M;%S]") + "-synchronizacja-" + login
+     path = shutil.make_archive(name, 'zip',  os.path.join("D:","Synchronizacja",login))
      print("zip made for login: " + login)
      return str(path)
     
 
-#def make_send_deleteZip(client):
-#    
-#    path = makeZip()
-#
-#    print(path)
-#
-#    file = open(path,'rb')
-#    byte = file.read(1024)
-#    fb = b''
-#    x = 1024
-#    while byte:
-#        fb += byte
-#        client.write(byte)
-#        print("reading ")
-#        print(x)
-#        x += 1024
-#        byte = file.read(1024)
-#
-#      
-#    client.write(('\r\n\r\n').encode('utf-8'))
-#    print("File sent\n")    
-#    file.close()
-#    print("File closed \n")
-#    delete_file(path)
     
 def delete_file(path):
     os.remove(path)
@@ -120,12 +133,12 @@ class SynchronizerServerClientProtocol(asyncio.Protocol):
         msg = data.decode()
         if(msg == "HI"):
             print("I recive: {}".format(msg))
-            self.transport.write("240 HELLO\r\n".encode())
-            self.transport.write("SEND ME <204 LOGIN PASSWORD>\r\n\r\n".encode())
+            self.transport.write("101 HELLO\r\n".encode())
+            #self.transport.write("SEND ME <204 LOGIN PASSWORD>\r\n\r\n".encode())
         
         #  if(msg.split(' ')[0] == "204" <204 LOGIN PASSWORD>
 
-        if(msg.split(' ')[0] == "204"):
+        if(msg.split(' ')[0] == "LOGIN"):
             print("I recive: {}".format(msg))
             account = checkLogin(accounts,msg.split(' ')[1])
             if( account != None):
@@ -138,6 +151,9 @@ class SynchronizerServerClientProtocol(asyncio.Protocol):
                     #dlugosc zipa
                     #zipa w bajtach
                     path = makeZip("test")
+                    self.transport.write("240 LOGGED_IN\r\n".encode())
+                    sesion_id = 1 ########### DO GENEROWANIA
+                    self.transport.write("SESIONID " + str(sesion_id) + "\r\n".encode())
                     sendZip(self,path)
                 else:
                     print("BAD PASSWORD")
