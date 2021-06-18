@@ -142,6 +142,31 @@ def checkPassword(account, password):
         return True
     return False
 
+def recvZip(client,port,full_size):
+
+    s2 = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    s2.connect(("localhost",port))
+
+    s2.sendall("READY\r\n\r\n".encode())
+
+    temp_name = datetime.datetime.now().strftime("[%d.%m.%Y-%H;%M;%S]") + "synchronizacja" + str(client.name)    
+    main_dir =  os.path.join("C:","Synchronizacja","")
+    temp_zip = os.path.join(main_dir,temp_name)
+    path_to_unzip = os.path.join("C:","Synchronizacja", client.name)
+    
+    f = open(temp_zip, 'wb')
+    size = 0
+    while full_size < size:
+        f.write(s2.recv(1))
+        size +=1
+    f.close()
+    s2.sendall("SUCCESS\r\n\r\n".encode())
+    s2.close()
+
+    shutil.rmtree(path_to_unzip)
+    shutil.unpack_archive(temp_zip,path_to_unzip)
+    os.remove(temp_zip)
+
 
 
 def givePort():
