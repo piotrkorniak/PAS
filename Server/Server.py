@@ -12,11 +12,12 @@ from pathlib import Path
 from random import seed
 from random import randint
 
-def rsa_algo(p: int,q: int, msg: str):
+
+def rsa_algo(p: int, q: int, msg: str):
     # n = pq
     n = p * q
     # z = (p-1)(q-1)
-    z = (p-1)*(q-1)
+    z = (p - 1) * (q - 1)
 
     # e -> gcd(e,z)==1      ; 1 < e < z
     # d -> ed = 1(mod z)        ; 1 < d < z
@@ -45,29 +46,32 @@ def rsa_algo(p: int,q: int, msg: str):
 
     return cypher_text, plain_text
 
+
 def find_e(z: int):
     # e -> gcd(e,z)==1      ; 1 < e < z
     e = 2
     while e < z:
         # check if this is the required `e` value
-        if gcd(e, z)==1:
+        if gcd(e, z) == 1:
             return e
         # else : increment and continue
         e += 1
+
 
 def find_d(e: int, z: int):
     # d -> ed = 1(mod z)        ; 1 < d < z
     d = 2
     while d < z:
         # check if this is the required `d` value
-        if ((d*e) % z)==1:
+        if ((d * e) % z) == 1:
             return d
         # else : increment and continue
         d += 1
 
+
 def gcd(x: int, y: int):
     # GCD by Euclidean method
-    small,large = (x,y) if x<y else (y,x)
+    small, large = (x, y) if x < y else (y, x)
 
     while small != 0:
         temp = large % small
@@ -76,138 +80,156 @@ def gcd(x: int, y: int):
 
     return large
 
+def load():
+    with open('sample.json') as json_file:
+        data = json.load(json_file)
+        return data
 
-def register(login:str,password:str):  
-   new_data={login:str(rsa_algo(3,11,password))}
-   with open('sample.json','r+') as file:
+
+def register(dicto,login: str, password: str):
+    new_data = {login: str(rsa_algo(3, 11, password))}
+    with open('sample.json', 'r+') as file:
         file_data = json.load(file)
         file_data.update(new_data)
         file.seek(0)
-        json.dump(file_data, file, indent = 4)
+        json.dump(file_data, file, indent=4)
+        dicto=load()
         try:
-            path = os.path.join(os.sep,"Synchronizacja", login)
+            path = os.path.join(os.sep, "Synchronizacja", login)
             print("TWORZE FOLDER")
             print(path)
             os.mkdir(path)
         except OSError as error:
             print("Plik juz istnieje")
 
-def load():    
-    with open('sample.json') as json_file: 
-        data = json.load(json_file)
-        return data
-dicto=load()
-def log(data,login : str,password : str):
-    p=str(rsa_algo(3,11,password))
-    if data[login]==p:
+
+
+
+dicto = load()
+
+
+def log(data, login: str, password: str):
+    p = str(rsa_algo(3, 11, password))
+    if data[login] == p:
         print("access permission")
         return 1
     else:
         print("Bad password !!!")
         return 0
 
-data=load() #trzeba wywoływać za każdym razem
 
-def logowanie(data,login:str,password:str):
-    if login.encode() in data:
-        if log(data,login,password) == 1:
+dicto = load()  # trzeba wywoływać za każdym razem
+
+
+def logowanie(data, login: str, password: str):
+    data=load()
+    if login in data:
+        if log(data, login, password) == 1:
+            print("Go on")
             return 1
-        elif log(data,login,password) == 0:
-            return 0 # błedne hasło
+        elif log(data, login, password) == 0:
+            print("BAd Password")
+            return 0  # błedne hasło
     else:
-        register(login,password)
-        return 1 #nowe konto
+        print("Rejestracja")
+        register(data,login, password)
+        data=load()
+        return 1  # nowe konto
 
 
 class Account:
     login = ''
     password = ''
 
-    def setPassword(self,password):
+    def setPassword(self, password):
         self.password = password
-    
-    def setLogin(self,login):
+
+    def setLogin(self, login):
         self.login = login
 
 
-
-def checkLogin(login_list,login):
+def checkLogin(login_list, login):
     for obj in login_list:
-        if(obj.login == login):
+        if (obj.login == login):
             return obj
     return None
 
+
 def checkPassword(account, password):
-    if( account.password == password ):
+    if (account.password == password):
         return True
     return False
 
-def recvZip(client,port,full_size):
 
-    s2 = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    s2.connect(("localhost",port))
+def recvZip(client, port, full_size):
+    s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s2.connect(("localhost", int(port)))
 
     s2.sendall("READY\r\n\r\n".encode())
 
-    temp_name = datetime.datetime.now().strftime("[%d.%m.%Y-%H;%M;%S]") + "synchronizacja" + str(client.name)    
-    main_dir =  os.path.join("C:","Synchronizacja","")
-    temp_zip = os.path.join(main_dir,temp_name)
-    path_to_unzip = os.path.join("C:","Synchronizacja", client.name)
-    
+    temp_name = datetime.datetime.now().strftime("[%d.%m.%Y-%H;%M;%S]") + "synchronizacja" + str(client.name) + '.zip'
+    main_dir = os.path.join(os.sep, "Synchronizacja")
+    temp_zip = os.path.join(main_dir, temp_name)
+    path_to_unzip = os.path.join(os.sep, "Synchronizacja", client.name)
+    print("PATTTH:  " + path_to_unzip)
+
     f = open(temp_zip, 'wb')
     size = 0
-    while full_size < size:
+    while size < int(full_size):
         f.write(s2.recv(1))
-        size +=1
+        size += 1
     f.close()
-    s2.sendall("SUCCESS\r\n\r\n".encode())
+    print("SUCCESS FILE RECIVED")
+    s2.sendall("203 SUCCESS\r\n\r\n".encode())
     s2.close()
 
+    print("REMOVE PATH DIR:  " + path_to_unzip)
     shutil.rmtree(path_to_unzip)
-    shutil.unpack_archive(temp_zip,path_to_unzip)
+    if (int(full_size) == 22):
+        os.mkdir(path_to_unzip)
+    else:
+        shutil.unpack_archive(temp_zip, path_to_unzip)
+    print("Rozpakowano archiwum")
     os.remove(temp_zip)
 
 
-
 def givePort():
-    port_download = randint(10000,65535)    
+    port_download = randint(30000, 65535)
     return port_download
-    
 
 
-def sendZip(client,path):
+def sendZip(client, path):
     newPort = givePort()
-    s2 = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    s2.bind(("localhost",newPort))
-    s2.listen(1)   
-                   
+    s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s2.bind(("localhost", newPort))
+    s2.listen(1)
+
     size = Path(path).stat().st_size
-    client.transport.write(("260 UPDATE "+ str(newPort) + " " + str(size) +"\r\n\r\n").encode())
-    
-    client_download,addres_download = s2.accept()
+    client.transport.write(("260 UPDATE " + str(newPort) + " " + str(size) + "\r\n\r\n").encode())
+
+    client_download, addres_download = s2.accept()
     print("Download connected: " + addres_download[0])
     msg = b''
     while b'\r\n\r\n' not in msg:
         msg += client_download.recv(1)
 
-    if(msg.decode() == "READY\r\n\r\n"):
+    if (msg.decode() == "READY\r\n\r\n"):
         print("USER READY TO DOWNLOAD")
 
-    file = open(path,'rb')
+    file = open(path, 'rb')
     byte = file.read(1)
     while byte:
         client_download.sendall(byte)
         byte = file.read(1)
 
-
     msg = b''
     while b'\r\n\r\n' not in msg:
         msg += client_download.recv(1)
 
-    if(msg.decode() == "SUCCESS\r\n\r\n"):
+    if (msg.decode() == "SUCCESS\r\n\r\n"):
         print("USER SUCCESS DOWNLOAD")
 
-    print("File sent\n")    
+    print("File sent\n")
     file.close()
     print("File closed \n")
     client_download.close()
@@ -216,21 +238,18 @@ def sendZip(client,path):
 
 
 def makeZip(login):
-     
-     name = datetime.datetime.now().strftime("[%d.%m.%Y-%H;%M;%S]") + "-synchronizacja-" + login
-     zip_path = os.path.join(os.sep,"Synchronizacja", login)
-     print("ZIP PATH: " + zip_path)
-     print("NAME: " + name)     
-     path = shutil.make_archive(name,'zip', zip_path)#maindir,login
-     print("zip made for login: " + login)
-     return str(path)
-    
+    name = datetime.datetime.now().strftime("[%d.%m.%Y-%H;%M;%S]") + "-synchronizacja-" + login
+    zip_path = os.path.join(os.sep, "Synchronizacja", login)
+    print("ZIP PATH: " + zip_path)
+    print("NAME: " + name)
+    path = shutil.make_archive(name, 'zip', zip_path)  # maindir,login
+    print("zip made for login: " + login)
+    return str(path)
 
-    
+
 def delete_file(path):
     os.remove(path)
     print("File removed \n")
-
 
 
 class SynchronizerServerClientProtocol(asyncio.Protocol):
@@ -238,8 +257,9 @@ class SynchronizerServerClientProtocol(asyncio.Protocol):
         self.transport = transport
         self.addr = transport.get_extra_info('peername')
         clients.append(self)
-        print('Connection from {}'.format(self.addr))
 
+        print(transport.get_extra_info('socket'))
+        print('Connection from {}'.format(self.addr))
 
     def connection_lost(self, exc):
         print('Client disconnected {}'.format(self.addr))
@@ -247,88 +267,100 @@ class SynchronizerServerClientProtocol(asyncio.Protocol):
 
     def data_received(self, data):
         msg = data.decode()
-        print("I recive: {}".format(msg))
-        if(msg == "HI\r\n\r\n"):
+        print("I recive: " + str(msg) + "FROM: " + str(self.transport.get_extra_info('peername')))
+
+        if (msg == "HI\r\n\r\n"):
             print("I recive: {}".format(msg))
             self.transport.write("100 HELLO\r\n\r\n".encode())
-            #self.transport.write("SEND ME <204 LOGIN PASSWORD>\r\n\r\n".encode())
-            
+            # self.transport.write("SEND ME <204 LOGIN PASSWORD>\r\n\r\n".encode())
+
         #  if(msg.split(' ')[0] == "204" <204 LOGIN PASSWORD>
-        
-        if(msg.split('\r\n')[0] == "LOGIN"):
+
+        if (msg.split('\r\n')[0] == "LOGIN"):
             print("I recive: {}".format(msg))
             login = str(msg.split('\r\n')[1])
             print("I recive: {}".format(login))
             password = str(msg.split('\r\n')[2])
 
-            if(logowanie(dicto,login,password) == 1):
+            if (logowanie(dicto, login, password) == 1):
                 print("LOGGED IN")
                 self.name = login
-                #caly folder do zipa
-                #przelaczenie na nowy socket i wyslanie nowego portu
-                #dlugosc zipa
-                #zipa w bajtach
-                #dir =  os.path.join("C:","Synchronizacja",login)
-                #path = makeZip(dir)# sciezka do folderu uzytkownika
+                # caly folder do zipa
+                # przelaczenie na nowy socket i wyslanie nowego portu
+                # dlugosc zipa
+                # zipa w bajtach
+                # dir =  os.path.join("C:","Synchronizacja",login)
+                # path = makeZip(dir)# sciezka do folderu uzytkownika
                 self.transport.write("240 LOGGED_IN\r\n\r\n".encode())
-                #sesion_id = 1 ########### DO GENEROWANIA
-                #self.transport.write("SESIONID " + str(sesion_id) + "\r\n".encode())
-                task = asyncio.create_task(self.async_sendZip())
+                # sesion_id = 1 ########### DO GENEROWANIA
+                # self.transport.write("SESIONID " + str(sesion_id) + "\r\n".encode())
+                path = makeZip(self.name)
+                task = asyncio.create_task(self.async_sendZip(path))
             else:
                 print("BAD PASSWORD")
                 self.transport.write("403 BAD PASSWORD\r\n\r\n".encode())
-  
-        
-        if(msg == "SEND"): #sprawdzajaca tymczasowa
-            print("I recive: {}".format(msg))
-            self.name = "LOGIN" + str(self.addr)
-            for a in clients:
-                print(a.name)
-            task = asyncio.create_task(self.async_sendZip())
-        
-        if(msg.split(' ')[0] == "202"):
+
+        # if(msg == "SEND"): #sprawdzajaca tymczasowa
+        #    print("I recive: {}".format(msg))
+        #    self.name = "LOGIN" + str(self.addr)
+        #    for a in clients:
+        #        print(a.name)
+        #    task = asyncio.create_task(self.async_sendZip())
+
+        if (msg.split(' ')[0] == "202"):
             print("I recive: {}".format(msg))
             print("CLIENT HAS SAME FILES")
-        
-        if(msg.split(' ')[0] == "505"):
-            print("I recive: {}".format(msg))
-            task = asyncio.create_task(self.async_sendZip())
 
-        if(msg.split(' ')[0] == "203"):
+        # if(msg.split(' ')[0] == "505"):
+        #    print("I recive: {}".format(msg))
+        #    task = asyncio.create_task(self.async_sendZip())
+
+        if (msg.split(' ')[0] == "203"):
             print("I recive: {}".format(msg))
             print("FILES RECEIVED SUCCESSFULLY")
-            
-        if(msg.split(' ')[0] == "503"):
+
+        if (msg.split(' ')[0] == "503"):
             print("I recive: {}".format(msg))
             print("FILES RECEIVED NOT SUCCESSFULLY")
 
-        if(msg.split('\r\n')[0] == "CHANGE"):
+        if (msg.split('\r\n')[0] == "CHANGE"):
             print("I recive: {}".format(msg))
             print("SERVER NEED UPDATE")
-            #FUNKCJA UPDATE SERWERA
-            #po update 
+
+            port = msg.split('\r\n')[1]
+            full_size = msg.split('\r\n')[2]
+            #task = asyncio.create_task(self.async_recvZip(port, full_size))
+            print("PoTask")
+            recvZip(self, port, full_size)
+            # FUNKCJA UPDATE SERWERA
+            # po update
             for client in clients:
-                if(client.name == self.name):
-                    client.transport.write("267 CHANGE dlugosc zipa / nowy port\r\n\r\n".encode())
-                    task = asyncio.create_task(self.async_sendZip())
-                #wyslanie do wszystkich otrzymanego zipa 
+                print("UPDATE OTHER CLIENTS")
+                if ((client.name == self.name) and (client != self)):
+                    print("UPDATE CLIENT: " + str(client.transport.get_extra_info('peername')))
+                    path = makeZip(self.name)
+                    print("ZIP MADE PATH: " + str(path))
+                    task = asyncio.create_task(client.async_sendZip(path))
+            #       #wyslanie do wszystkich otrzymanego zipa
 
+    async def async_sendZip(self,path):
+        # dirr =  os.path.join("C:","Synchronizacja",self.name)
+        resp = await loop.run_in_executor(thread_pool, sendZip, self, path)
 
-    async def async_sendZip(self):
-        #dirr =  os.path.join("C:","Synchronizacja",self.name)
-        path = makeZip(self.name)
-        resp = await loop.run_in_executor(thread_pool,sendZip,self,path)
-
+    async def async_recvZip(self, port, fullsize):
+        # dirr =  os.path.join("C:","Synchronizacja",self.name)
+        # path = makeZip(self.name)
+        resp = await loop.run_in_executor(thread_pool, recvZip, self, port, fullsize)
 
 
 try:
-    path = os.path.join(os.sep,"Synchronizacja")
+    path = os.path.join(os.sep, "Synchronizacja")
     os.mkdir(path)
 except OSError as error:
     print("FOLDER GLOWNY ISTNIEJE")
-    
-seed(1)   
-dicto=load()
+
+seed(1)
+dicto = load()
 clients = []
 thread_pool = concurrent.futures.ThreadPoolExecutor()
 loop = asyncio.get_event_loop()

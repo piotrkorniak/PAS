@@ -21,16 +21,18 @@ namespace Client
             ProtocolType.Tcp);
 
         private static string _userName;
-        private static string _sessionId;
+
+        private static FileWatcher _watcher;
+        private static string _directoryPath;
+        private static string _zipPath;
 
         static void Main(string[] args)
         {
             Server.Connect(IPAddress.Loopback, ServerPort);
-            SendMessage("HI\r\n", Server);                                                                              //HI\r\n\r\n
+            SendMessage("HI\r\n\r\n", Server); //HI\r\n\r\n
             string message = ReceiveDataInString(Server, EndCode);
-            int messageCode = GetMessageCode(message);                                                                  //101 HI\r\n\r\n
-            Console.WriteLine(message);
-            if (messageCode != 101)
+            int messageCode = GetMessageCode(message); //101 HI\r\n\r\n
+            if (messageCode != 100)
                 return;
             while (true)
             {
@@ -45,38 +47,67 @@ namespace Client
                 }
 
                 SendMessage($"LOGIN\r\n{_userName}\r\n{password}\r\n\r\n",
-                    Server);                                                                                            //LOGIN\r\nUSERNAME\r\nPASSWORD\r\n\r\n
+                    Server); //LOGIN\r\nUSERNAME\r\nPASSWORD\r\n\r\n
 
                 message = ReceiveDataInString(Server, EndCode);
                 messageCode = GetMessageCode(message);
-                if (messageCode == 404)                                                                                 //404 BAD PASSWORD\r\n\r\n
+                if (messageCode == 403) //404 BAD PASSWORD\r\n\r\n
                 {
                     continue;
                 }
 
-                if (messageCode == 240)                                                                                 //240 LOGGED IN SESIONID = __SESIONID__\r\n\r\n
+                if (messageCode == 240) //240 LOGGED IN SESIONID = __SESIONID__\r\n\r\n
                 {
-                    _sessionId = message.Split().Last();
                     break;
                 }
             }
 
-            message = ReceiveDataInString(Server, EndCode);                                                             //241 __PORT__ __ROZMIAR_PLIKU__
+            if (args.Length == 0)
+            {
+                _directoryPath = @"C:\synchronizacjaKlient\rider\" + _userName;
+                _zipPath = @"C:\synchronizacjaKlient\rider\" + _userName + ".zip";
+            }
+            else
+            {
+                _directoryPath = @"C:\synchronizacjaKlient" + @"\" + args[0] + @"\" + _userName;
+                _zipPath = @"C:\synchronizacjaKlient" + @"\" + args[0] + @"\" + _userName + ".zip";
+            }
+
+
+            Console.WriteLine(_directoryPath);
+            message = ReceiveDataInString(Server, EndCode); //260 __PORT__ __ROZMIAR_PLIKU__
             messageCode = GetMessageCode(message);
-            if (messageCode != 241)
+            if (messageCode != 260)
             {
                 return;
             }
 
-            int port = int.Parse(message.Split().ElementAt(1));
-            int directoryInZipLength = int.Parse(message.Split().ElementAt(2));
+            int port = int.Parse(message.Split().ElementAt(2));
+            int directoryInZipLength = int.Parse(message.Split().ElementAt(3));
             var directoryInZip = DownloadFile(directoryInZipLength, ServerIp, port);
 
-            File.WriteAllBytes($"{_userName}.zip", directoryInZip.ToArray());
-            ZipFile.ExtractToDirectory($"{_userName}.zip", _userName);
+            if (File.Exists(_zipPath))
+            {
+                File.Delete(_zipPath);
+            }
 
-            Task.Run(() => WaitForFileChanged(Server, _userName));
+            File.WriteAllBytes(_zipPath, directoryInZip.ToArray());
 
+            if (Directory.Exists(_directoryPath))
+            {
+                Directory.Delete(_directoryPath, true);
+            }
+
+            ZipFile.ExtractToDirectory(_zipPath, _directoryPath);
+
+            if (!Directory.Exists(_directoryPath))
+            {
+                Directory.CreateDirectory(_directoryPath);
+            }
+
+            _watcher = new FileWatcher(_directoryPath, TimeSpan.FromSeconds(5));
+            _watcher.StartWatching();
+            _watcher.FilesModified += OnFilesModified;
             WaitForServerRequest(Server);
         }
 
@@ -85,59 +116,73 @@ namespace Client
             while (true)
             {
                 var message = ReceiveDataInString(socket, EndCode);
-                Console.WriteLine(message);
                 var messageCode = int.Parse(message.Split().First());
-                if (messageCode == 267)                                                                                 //267 CHANGE __PORT__ __ROZMIAR__
+                if (messageCode == 260) //267 CHANGE __PORT__ __ROZMIAR__
                 {
-                    int port = int.Parse(message.Split().ElementAt(1));
-                    int directoryInZipLength = int.Parse(message.Split().ElementAt(2));
+                    _watcher.StopWatching();
+                    int port = int.Parse(message.Split().ElementAt(2));
+                    int directoryInZipLength = int.Parse(message.Split().ElementAt(3));
+                    Console.WriteLine($"PORT: {port} Długość: {directoryInZipLength}");
                     var directoryInZip = DownloadFile(directoryInZipLength, ServerIp, port);
-                    File.WriteAllBytes($"{_userName}.zip", directoryInZip.ToArray());
-                    ZipFile.ExtractToDirectory($"{_userName}.zip", _userName);
+                    if (File.Exists(_zipPath))
+                    {
+                        File.Delete(_zipPath);
+                    }
+
+                    File.WriteAllBytes(_zipPath, directoryInZip.ToArray());
+                    if (Directory.Exists(_directoryPath))
+                    {
+                        Directory.Delete(_directoryPath, true);
+                    }
+
+                    ZipFile.ExtractToDirectory(_zipPath, _directoryPath);
+                    if (!Directory.Exists(_directoryPath))
+                    {
+                        Directory.CreateDirectory(_directoryPath);
+                    }
+
+                    _watcher.StartWatching();
                 }
             }
         }
 
         static int GetMessageCode(string message)
         {
-            return int.Parse(message.Split().First());
-        }
-
-        private static void WaitForFileChanged(Socket socket, string directoryPath)
-        {
-            using var watcher = new FileWatcher(directoryPath, TimeSpan.FromSeconds(5));
-            watcher.StartWatching();
-            watcher.FilesModified += OnFilesModified;
+            var codeInString = message.Split().First();
+            return int.Parse(codeInString);
         }
 
         private static List<byte> DownloadFile(int fileSize, IPAddress ip, int port)
         {
             var downloadSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             downloadSocket.Connect(ip, port);
-            SendMessage("READY\r\n\r\n", downloadSocket);                                                               //READY\r\n\r\n            
+            SendMessage("READY\r\n\r\n", downloadSocket); //READY\r\n\r\n            
 
             List<byte> result = new List<byte>();
             byte[] buffer = new Byte[1];
 
             for (int i = 0; i < fileSize; i++)
             {
-                downloadSocket.Receive(buffer, 1, SocketFlags.None);                                                 //Przesyłanie zipa na nowym porcie
+                downloadSocket.Receive(buffer, 1, SocketFlags.None); //Przesyłanie zipa na nowym porcie
                 result.Add(buffer[0]);
             }
 
-            SendMessage("SUCCESS\r\n\r\n", downloadSocket);                                                             //SUCCESS\r\n\r\n
+            SendMessage("SUCCESS\r\n\r\n", downloadSocket); //SUCCESS\r\n\r\n
             return result;
         }
 
         static void SendMessage(string message, Socket socket)
         {
+            Console.WriteLine("Wysłano wiadomość" + message);
             socket.Send(Encoding.UTF8.GetBytes(message));
         }
 
         static string ReceiveDataInString(Socket socket, byte[] endCode)
         {
             List<byte> receiveDataInBytes = ReceiveDataInBytes(socket, endCode);
-            return Encoding.UTF8.GetString(receiveDataInBytes.ToArray());
+            var dataInString = Encoding.UTF8.GetString(receiveDataInBytes.ToArray());
+            Console.WriteLine("Odebrano wiadomość" + dataInString);
+            return dataInString;
         }
 
         static List<byte> ReceiveDataInBytes(Socket socket, byte[] endCode)
@@ -163,16 +208,22 @@ namespace Client
 
         private static void OnFilesModified(IEnumerable<ModifiedFile> modifiedFiles)
         {
+            Console.WriteLine("OnFilesModified");
             foreach (var modifiedFile in modifiedFiles)
             {
                 Console.WriteLine(
                     $"{DateTime.Now} {modifiedFile.FilePath}: {modifiedFile.ModificationType.ToString()}");
             }
 
-            SendMessage("CHANGE __SESIONID__ __PORT__  __ROZMIAR__", Server);
+            Task.Run(SendDirectory);
+        }
 
-            ZipFile.CreateFromDirectory(_userName, $"{_userName}.zip");
-            var zipInBytes = new FileInfo($"{_userName}.zip").Length;
+        private static void SendDirectory()
+        {
+            _watcher.StopWatching();
+            File.Delete(_zipPath);
+            ZipFile.CreateFromDirectory(_directoryPath, _zipPath);
+            var zipLength = new FileInfo(_zipPath).Length;
             int randPort = new Random().Next(10000, 65535);
 
             var sendFileSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -180,24 +231,24 @@ namespace Client
 
             sendFileSocket.Bind(sendFileEndPoint);
             sendFileSocket.Listen(1);
-
-            SendMessage($"CHANGE {_sessionId} {randPort}  {zipInBytes}\r\n\r\n",
-                Server);                                                                                                //CHANGE __SESIONID__ __PORT__  __ROZMIAR__
-
+            SendMessage($"CHANGE\r\n{randPort}\r\n{zipLength}\r\n\r\n",
+                Server); //CHANGE __SESIONID__ __PORT__  __ROZMIAR__
             var sendFileClient = sendFileSocket.Accept();
             var message = ReceiveDataInString(sendFileClient, EndCode);
-            if (message != "READY")                                                                                     //READY\r\n\r\n
+            if (message != "READY") //READY\r\n\r\n
             {
                 return;
             }
 
-            sendFileClient.SendFile($"{_userName}.zip");                                                                //Przesyłanie zipa na nowym porcie
+            sendFileClient.SendFile(_zipPath); //Przesyłanie zipa na nowym porcie
 
-            if (message == "SUCCESS")                                                                                   //SUCCESS\r\n\r\n
+            message = ReceiveDataInString(sendFileClient, EndCode);
+            if (message == "SUCCESS") //SUCCESS\r\n\r\n
             {
             }
 
             sendFileClient.Close();
+            _watcher.StartWatching();
         }
     }
 }
