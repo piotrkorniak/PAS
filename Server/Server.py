@@ -249,22 +249,6 @@ class SynchronizerServerClientProtocol(asyncio.Protocol):
                 self.transport.write("403 BAD PASSWORD\r\n\r\n".encode())
 
 
-        elif (msg.split(' ')[0] == "202"):
-            print("I recive: {}".format(msg))
-            print("CLIENT HAS SAME FILES")
-
-        elif(msg.split(' ')[0] == "505"):
-            print("I recive: {}".format(msg))
-            task = asyncio.create_task(self.async_sendZip())
-
-        elif (msg.split(' ')[0] == "203"):
-            print("I recive: {}".format(msg))
-            print("FILES RECEIVED SUCCESSFULLY")
-
-        elif (msg.split(' ')[0] == "503"):
-            print("I recive: {}".format(msg))
-            print("FILES RECEIVED NOT SUCCESSFULLY")
-
         elif (msg.split('\r\n')[0] == "CHANGE"):
             print("I recive: {}".format(msg))
             print("SERVER NEED UPDATE")
