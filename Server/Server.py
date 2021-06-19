@@ -299,7 +299,6 @@ class SynchronizerServerClientProtocol(asyncio.Protocol):
         else:
             print("BAD COMMAND")
             self.transport.write("404 BAD REQUEST\r\n\r\n".encode())
-            #WYSYLANIE BLEDU O NIEPRAWIDLOWYM ZAPYTANIU 
 
 
     async def async_sendZip(self,path):
