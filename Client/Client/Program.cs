@@ -7,7 +7,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
-using Client.FileWatcherLibrary;
 
 namespace Client
 {
@@ -73,7 +72,11 @@ namespace Client
                 _zipPath = @"C:\synchronizacjaKlient" + @"\" + args[0] + @"\" + _userName + ".zip";
             }
 
-
+            if (!Directory.Exists(_directoryPath))
+            {
+                Directory.CreateDirectory(_directoryPath);
+            }
+            
             Console.WriteLine(_directoryPath);
             message = ReceiveDataInString(Server, EndCode); //260 __PORT__ __ROZMIAR_PLIKU__
             messageCode = GetMessageCode(message);
@@ -206,14 +209,9 @@ namespace Client
                        endCodeInList.Count));
         }
 
-        private static void OnFilesModified(IEnumerable<ModifiedFile> modifiedFiles)
+        private static void OnFilesModified()
         {
             Console.WriteLine("OnFilesModified");
-            foreach (var modifiedFile in modifiedFiles)
-            {
-                Console.WriteLine(
-                    $"{DateTime.Now} {modifiedFile.FilePath}: {modifiedFile.ModificationType.ToString()}");
-            }
 
             Task.Run(SendDirectory);
         }
@@ -246,7 +244,6 @@ namespace Client
             if (message == "SUCCESS") //SUCCESS\r\n\r\n
             {
             }
-
             sendFileClient.Close();
             _watcher.StartWatching();
         }

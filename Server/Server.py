@@ -12,6 +12,10 @@ from pathlib import Path
 from random import seed
 from random import randint
 
+pom={}
+if not os.path.exists('sample.json'):
+    with open('sample.json', 'w') as f:
+        json.dump(pom, f)
 
 def rsa_algo(p: int, q: int, msg: str):
     # n = pq
@@ -288,14 +292,8 @@ class SynchronizerServerClientProtocol(asyncio.Protocol):
             print("SERVER NEED UPDATE")
             port = msg.split('\r\n')[1]
             full_size = msg.split('\r\n')[2]
-            recvZip(self, port, full_size)
-            for client in clients:
-                print("UPDATE OTHER CLIENTS")
-                if ((client.name == self.name) and (client != self)):
-                    print("UPDATE CLIENT: " + str(client.transport.get_extra_info('peername')))
-                    path = makeZip(self.name)
-                    print("ZIP MADE PATH: " + str(path))
-                    task = asyncio.create_task(client.async_sendZip(path))
+            task = asyncio.create_task(self.async_recvZip(port, full_size))
+
         else:
             print("BAD COMMAND")
             self.transport.write("404 BAD REQUEST\r\n\r\n".encode())
@@ -306,15 +304,24 @@ class SynchronizerServerClientProtocol(asyncio.Protocol):
 
     async def async_recvZip(self, port, fullsize):
         resp = await loop.run_in_executor(thread_pool, recvZip, self, port, fullsize)
+        for client in clients:
+            print("UPDATE OTHER CLIENTS")
+            if ((client.name == self.name) and (client != self)):
+                print("UPDATE CLIENT: " + str(client.transport.get_extra_info('peername')))
+                path = makeZip(self.name)
+                print("ZIP MADE PATH: " + str(path))
+                task = asyncio.create_task(client.async_sendZip(path))
+
 
 
 try:
+    print("TWORZENIE FOLDERU GLOWNEGO")
     path = os.path.join(os.sep, "Synchronizacja")
     os.mkdir(path)
 except OSError as error:
     print("FOLDER GLOWNY ISTNIEJE")
 
-seed(1)
+seed()
 dicto = load()
 clients = []
 thread_pool = concurrent.futures.ThreadPoolExecutor()
