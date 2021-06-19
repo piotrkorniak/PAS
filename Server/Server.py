@@ -122,25 +122,28 @@ def logowanie(data, login: str, password: str):
 
 def recvZip(client, port, full_size):
     s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s2.connect(("localhost", int(port)))
+    try:
+        s2.connect(("localhost", int(port)))
 
-    s2.sendall("READY\r\n\r\n".encode())
+        s2.sendall("READY\r\n\r\n".encode())
 
-    temp_name = datetime.datetime.now().strftime("[%d.%m.%Y-%H;%M;%S]") + "synchronizacja" + str(client.name) + '.zip'
-    main_dir = os.path.join(os.sep, "Synchronizacja")
-    temp_zip = os.path.join(main_dir, temp_name)
-    path_to_unzip = os.path.join(os.sep, "Synchronizacja", client.name)
-    print("PATTTH:  " + path_to_unzip)
+        temp_name = datetime.datetime.now().strftime("[%d.%m.%Y-%H;%M;%S]") + "synchronizacja" + str(client.name) + '.zip'
+        main_dir = os.path.join(os.sep, "Synchronizacja")
+        temp_zip = os.path.join(main_dir, temp_name)
+        path_to_unzip = os.path.join(os.sep, "Synchronizacja", client.name)
+        print("PATTTH:  " + path_to_unzip)
 
-    f = open(temp_zip, 'wb')
-    size = 0
-    while size < int(full_size):
-        f.write(s2.recv(1))
-        size += 1
-    f.close()
-    print("SUCCESS FILE RECIVED")
-    s2.sendall("203 SUCCESS\r\n\r\n".encode())
-    s2.close()
+        f = open(temp_zip, 'wb')
+        size = 0
+        while size < int(full_size):
+            f.write(s2.recv(1))
+            size += 1
+        f.close()
+        print("SUCCESS FILE RECIVED")
+        s2.sendall("203 SUCCESS\r\n\r\n".encode())
+        s2.close()
+    except:
+        print("ERROR RECV")
 
     print("REMOVE PATH DIR:  " + path_to_unzip)
     shutil.rmtree(path_to_unzip)
@@ -150,7 +153,6 @@ def recvZip(client, port, full_size):
         shutil.unpack_archive(temp_zip, path_to_unzip)
     print("Rozpakowano archiwum")
     os.remove(temp_zip)
-
 
 def givePort():
     port_download = randint(30000, 65535)
