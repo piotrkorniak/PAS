@@ -121,8 +121,9 @@ def logowanie(data, login: str, password: str):
 
 
 def recvZip(client, port, full_size):
-    s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    
     try:
+        s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s2.connect(("localhost", int(port)))
 
         s2.sendall("READY\r\n\r\n".encode())
