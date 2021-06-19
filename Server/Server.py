@@ -143,17 +143,18 @@ def recvZip(client, port, full_size):
         print("SUCCESS FILE RECIVED")
         s2.sendall("203 SUCCESS\r\n\r\n".encode())
         s2.close()
+    
+
+        print("REMOVE PATH DIR:  " + path_to_unzip)
+        shutil.rmtree(path_to_unzip)
+        if (int(full_size) == 22):
+            os.mkdir(path_to_unzip)
+        else:
+            shutil.unpack_archive(temp_zip, path_to_unzip)
+        print("Rozpakowano archiwum")
+        os.remove(temp_zip)
     except:
         print("ERROR RECV")
-
-    print("REMOVE PATH DIR:  " + path_to_unzip)
-    shutil.rmtree(path_to_unzip)
-    if (int(full_size) == 22):
-        os.mkdir(path_to_unzip)
-    else:
-        shutil.unpack_archive(temp_zip, path_to_unzip)
-    print("Rozpakowano archiwum")
-    os.remove(temp_zip)
 
 def givePort():
     port_download = randint(30000, 65535)
