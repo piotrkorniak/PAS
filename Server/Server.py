@@ -137,29 +137,6 @@ def logowanie(data, login: str, password: str):
         return 1  # nowe konto
 
 
-class Account:
-    login = ''
-    password = ''
-
-    def setPassword(self, password):
-        self.password = password
-
-    def setLogin(self, login):
-        self.login = login
-
-
-def checkLogin(login_list, login):
-    for obj in login_list:
-        if (obj.login == login):
-            return obj
-    return None
-
-
-def checkPassword(account, password):
-    if (account.password == password):
-        return True
-    return False
-
 
 def recvZip(client, port, full_size):
     s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -242,7 +219,7 @@ def makeZip(login):
     zip_path = os.path.join(os.sep, "Synchronizacja", login)
     print("ZIP PATH: " + zip_path)
     print("NAME: " + name)
-    path = shutil.make_archive(name, 'zip', zip_path)  # maindir,login
+    path = shutil.make_archive(name, 'zip', zip_path)
     print("zip made for login: " + login)
     return str(path)
 
@@ -272,11 +249,8 @@ class SynchronizerServerClientProtocol(asyncio.Protocol):
         if (msg == "HI\r\n\r\n"):
             print("I recive: {}".format(msg))
             self.transport.write("100 HELLO\r\n\r\n".encode())
-            # self.transport.write("SEND ME <204 LOGIN PASSWORD>\r\n\r\n".encode())
 
-        #  if(msg.split(' ')[0] == "204" <204 LOGIN PASSWORD>
-
-        if (msg.split('\r\n')[0] == "LOGIN"):
+        elif (msg.split('\r\n')[0] == "LOGIN"):
             print("I recive: {}".format(msg))
             login = str(msg.split('\r\n')[1])
             print("I recive: {}".format(login))
@@ -285,55 +259,36 @@ class SynchronizerServerClientProtocol(asyncio.Protocol):
             if (logowanie(dicto, login, password) == 1):
                 print("LOGGED IN")
                 self.name = login
-                # caly folder do zipa
-                # przelaczenie na nowy socket i wyslanie nowego portu
-                # dlugosc zipa
-                # zipa w bajtach
-                # dir =  os.path.join("C:","Synchronizacja",login)
-                # path = makeZip(dir)# sciezka do folderu uzytkownika
                 self.transport.write("240 LOGGED_IN\r\n\r\n".encode())
-                # sesion_id = 1 ########### DO GENEROWANIA
-                # self.transport.write("SESIONID " + str(sesion_id) + "\r\n".encode())
                 path = makeZip(self.name)
                 task = asyncio.create_task(self.async_sendZip(path))
             else:
                 print("BAD PASSWORD")
                 self.transport.write("403 BAD PASSWORD\r\n\r\n".encode())
 
-        # if(msg == "SEND"): #sprawdzajaca tymczasowa
-        #    print("I recive: {}".format(msg))
-        #    self.name = "LOGIN" + str(self.addr)
-        #    for a in clients:
-        #        print(a.name)
-        #    task = asyncio.create_task(self.async_sendZip())
 
-        if (msg.split(' ')[0] == "202"):
+        elif (msg.split(' ')[0] == "202"):
             print("I recive: {}".format(msg))
             print("CLIENT HAS SAME FILES")
 
-        # if(msg.split(' ')[0] == "505"):
-        #    print("I recive: {}".format(msg))
-        #    task = asyncio.create_task(self.async_sendZip())
+        elif(msg.split(' ')[0] == "505"):
+            print("I recive: {}".format(msg))
+            task = asyncio.create_task(self.async_sendZip())
 
-        if (msg.split(' ')[0] == "203"):
+        elif (msg.split(' ')[0] == "203"):
             print("I recive: {}".format(msg))
             print("FILES RECEIVED SUCCESSFULLY")
 
-        if (msg.split(' ')[0] == "503"):
+        elif (msg.split(' ')[0] == "503"):
             print("I recive: {}".format(msg))
             print("FILES RECEIVED NOT SUCCESSFULLY")
 
-        if (msg.split('\r\n')[0] == "CHANGE"):
+        elif (msg.split('\r\n')[0] == "CHANGE"):
             print("I recive: {}".format(msg))
             print("SERVER NEED UPDATE")
-
             port = msg.split('\r\n')[1]
             full_size = msg.split('\r\n')[2]
-            #task = asyncio.create_task(self.async_recvZip(port, full_size))
-            print("PoTask")
             recvZip(self, port, full_size)
-            # FUNKCJA UPDATE SERWERA
-            # po update
             for client in clients:
                 print("UPDATE OTHER CLIENTS")
                 if ((client.name == self.name) and (client != self)):
@@ -341,15 +296,15 @@ class SynchronizerServerClientProtocol(asyncio.Protocol):
                     path = makeZip(self.name)
                     print("ZIP MADE PATH: " + str(path))
                     task = asyncio.create_task(client.async_sendZip(path))
-            #       #wyslanie do wszystkich otrzymanego zipa
+        else:
+            print("BAD COMMAND")
+            #WYSYLANIE BLEDU O NIEPRAWIDLOWYM ZAPYTANIU 
+
 
     async def async_sendZip(self,path):
-        # dirr =  os.path.join("C:","Synchronizacja",self.name)
         resp = await loop.run_in_executor(thread_pool, sendZip, self, path)
 
     async def async_recvZip(self, port, fullsize):
-        # dirr =  os.path.join("C:","Synchronizacja",self.name)
-        # path = makeZip(self.name)
         resp = await loop.run_in_executor(thread_pool, recvZip, self, port, fullsize)
 
 
